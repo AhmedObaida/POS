@@ -1,28 +1,28 @@
 @extends('layouts.admin')
 
-@section('title', 'New product')
+@section('title', __('admin.products.new'))
 
 @section('content')
-<h1 class="h3 mb-3">New product</h1>
+<h1 class="h3 mb-3">{{ __('admin.products.new') }}</h1>
 <div class="card shadow-sm">
     <div class="card-body">
         <form method="post" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label class="form-label">Name</label>
+                    <label class="form-label">{{ __('admin.common.name') }}</label>
                     <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name') }}" required>
                     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">SKU</label>
+                    <label class="form-label">{{ __('admin.products.sku') }}</label>
                     <input type="text" name="sku" class="form-control @error('sku') is-invalid @enderror" value="{{ old('sku') }}" required>
                     @error('sku')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Category</label>
+                    <label class="form-label">{{ __('admin.products.category') }}</label>
                     <select name="category_id" class="form-select @error('category_id') is-invalid @enderror">
-                        <option value="">—</option>
+                        <option value="">{{ __('admin.common.em_dash') }}</option>
                         @foreach($categories as $c)
                             <option value="{{ $c->id }}" {{ (string) old('category_id') === (string) $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                         @endforeach
@@ -30,57 +30,57 @@
                     @error('category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Barcode</label>
+                    <label class="form-label">{{ __('admin.products.barcode') }}</label>
                     <input type="text" name="barcode" class="form-control @error('barcode') is-invalid @enderror" value="{{ old('barcode') }}">
                     @error('barcode')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12">
-                    <label class="form-label">Description</label>
+                    <label class="form-label">{{ __('admin.common.description') }}</label>
                     <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="2">{{ old('description') }}</textarea>
                     @error('description')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Retail price</label>
+                    <label class="form-label">{{ __('admin.products.retail_price') }}</label>
                     <input type="number" step="0.01" name="retail_price" class="form-control @error('retail_price') is-invalid @enderror" value="{{ old('retail_price', 0) }}" required>
                     @error('retail_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Wholesale price</label>
+                    <label class="form-label">{{ __('admin.products.wholesale_price') }}</label>
                     <input type="number" step="0.01" name="wholesale_price" class="form-control @error('wholesale_price') is-invalid @enderror" value="{{ old('wholesale_price', 0) }}" required>
                     @error('wholesale_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Purchase price (cost)</label>
+                    <label class="form-label">{{ __('admin.products.purchase_cost') }}</label>
                     <input type="number" step="0.01" name="purchase_price" class="form-control @error('purchase_price') is-invalid @enderror" value="{{ old('purchase_price', 0) }}" required>
                     @error('purchase_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Stock quantity</label>
+                    <label class="form-label">{{ __('admin.products.stock_quantity') }}</label>
                     <input type="number" name="stock_quantity" class="form-control @error('stock_quantity') is-invalid @enderror" value="{{ old('stock_quantity', 0) }}" required>
                     @error('stock_quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Minimum stock alert</label>
+                    <label class="form-label">{{ __('admin.products.minimum_stock') }}</label>
                     <input type="number" name="minimum_stock_alert" class="form-control @error('minimum_stock_alert') is-invalid @enderror" value="{{ old('minimum_stock_alert', 0) }}" required>
                     @error('minimum_stock_alert')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Status</label>
+                    <label class="form-label">{{ __('admin.common.status') }}</label>
                     <select name="status" class="form-select @error('status') is-invalid @enderror" required>
-                        <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>{{ __('admin.products.status_active') }}</option>
+                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>{{ __('admin.products.status_inactive') }}</option>
                     </select>
                     @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Image</label>
+                    <label class="form-label">{{ __('admin.products.image') }}</label>
                     <input type="file" name="image" class="form-control @error('image') is-invalid @enderror" accept="image/*">
                     @error('image')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             </div>
             <div class="mt-3">
-                <button class="btn btn-primary" type="submit">Save</button>
-                <a href="{{ route('admin.products.index') }}" class="btn btn-link">Cancel</a>
+                <button class="btn btn-primary" type="submit">{{ __('admin.common.save') }}</button>
+                <a href="{{ route('admin.products.index') }}" class="btn btn-link">{{ __('admin.common.cancel') }}</a>
             </div>
         </form>
     </div>

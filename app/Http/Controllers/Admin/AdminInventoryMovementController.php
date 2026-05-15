@@ -61,6 +61,6 @@ class AdminInventoryMovementController extends Controller
             return redirect()->back()->withInput()->withErrors(['quantity' => $e->getMessage()]);
         }
 
-        return redirect()->route('admin.inventory.index')->with('success', 'Inventory updated.');
+        return redirect()->route('admin.inventory.index')->with('success', __('messages.inventory_updated'));
     }
 }

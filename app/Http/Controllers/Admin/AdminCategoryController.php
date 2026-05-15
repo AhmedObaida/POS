@@ -32,7 +32,7 @@ class AdminCategoryController extends Controller
     {
         Category::query()->create($request->validated());
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category created.');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.category_created'));
     }
 
     public function edit(Category $category)
@@ -44,13 +44,13 @@ class AdminCategoryController extends Controller
     {
         $category->update($request->validated());
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category updated.');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.category_updated'));
     }
 
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return redirect()->route('admin.categories.index')->with('success', 'Category deleted.');
+        return redirect()->route('admin.categories.index')->with('success', __('messages.category_deleted'));
     }
 }

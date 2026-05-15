@@ -61,7 +61,7 @@ class AdminInvoiceController extends Controller
             return redirect()->back()->withInput()->withErrors(['items' => $e->getMessage()]);
         }
 
-        return redirect()->route('admin.invoices.show', $invoice)->with('success', 'Invoice created.');
+        return redirect()->route('admin.invoices.show', $invoice)->with('success', __('messages.invoice_created'));
     }
 
     public function show(Invoice $invoice)

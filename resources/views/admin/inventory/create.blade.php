@@ -1,50 +1,50 @@
 @extends('layouts.admin')
 
-@section('title', 'Restock / adjustment')
+@section('title', __('admin.inventory.create_title'))
 
 @section('content')
-<h1 class="h3 mb-3">Restock or manual adjustment</h1>
+<h1 class="h3 mb-3">{{ __('admin.inventory.create_title') }}</h1>
 <div class="card shadow-sm" style="max-width: 640px;">
     <div class="card-body">
         <form method="post" action="{{ route('admin.inventory.store') }}">
             @csrf
             <div class="mb-3">
-                <label class="form-label">Type</label>
+                <label class="form-label">{{ __('admin.inventory.type') }}</label>
                 <select name="type" id="mov_type" class="form-select @error('type') is-invalid @enderror" required>
-                    <option value="restock" {{ old('type', 'restock') === 'restock' ? 'selected' : '' }}>Restock (add stock)</option>
-                    <option value="adjustment" {{ old('type') === 'adjustment' ? 'selected' : '' }}>Adjustment</option>
+                    <option value="restock" {{ old('type', 'restock') === 'restock' ? 'selected' : '' }}>{{ __('admin.inventory.type_restock') }}</option>
+                    <option value="adjustment" {{ old('type') === 'adjustment' ? 'selected' : '' }}>{{ __('admin.inventory.type_adjustment') }}</option>
                 </select>
                 @error('type')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
-                <label class="form-label">Product</label>
+                <label class="form-label">{{ __('admin.inventory.product') }}</label>
                 <select name="product_id" class="form-select @error('product_id') is-invalid @enderror" required>
-                    <option value="">— Select —</option>
+                    <option value="">{{ __('admin.common.select') }}</option>
                     @foreach($products as $p)
-                        <option value="{{ $p->id }}" {{ (string) old('product_id') === (string) $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ $p->sku }}) — stock {{ $p->stock_quantity }}</option>
+                        <option value="{{ $p->id }}" {{ (string) old('product_id') === (string) $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ $p->sku }}) — {{ __('admin.invoices.stock_label') }} {{ $p->stock_quantity }}</option>
                     @endforeach
                 </select>
                 @error('product_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
-                <label class="form-label">Quantity</label>
+                <label class="form-label">{{ __('admin.inventory.quantity') }}</label>
                 <input type="number" name="quantity" class="form-control @error('quantity') is-invalid @enderror" value="{{ old('quantity', 1) }}" min="1" required>
                 @error('quantity')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3" id="dir_wrap">
-                <label class="form-label">Adjustment direction</label>
+                <label class="form-label">{{ __('admin.inventory.adjust_direction') }}</label>
                 <select name="adjustment_direction" class="form-select">
-                    <option value="add" {{ old('adjustment_direction', 'add') === 'add' ? 'selected' : '' }}>Add to stock</option>
-                    <option value="subtract" {{ old('adjustment_direction') === 'subtract' ? 'selected' : '' }}>Subtract from stock</option>
+                    <option value="add" {{ old('adjustment_direction', 'add') === 'add' ? 'selected' : '' }}>{{ __('admin.inventory.dir_add') }}</option>
+                    <option value="subtract" {{ old('adjustment_direction') === 'subtract' ? 'selected' : '' }}>{{ __('admin.inventory.dir_subtract') }}</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label">Notes</label>
+                <label class="form-label">{{ __('admin.common.notes') }}</label>
                 <textarea name="notes" class="form-control @error('notes') is-invalid @enderror" rows="2">{{ old('notes') }}</textarea>
                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <button type="submit" class="btn btn-primary">Submit</button>
-            <a href="{{ route('admin.inventory.index') }}" class="btn btn-link">Cancel</a>
+            <button type="submit" class="btn btn-primary">{{ __('admin.inventory.submit') }}</button>
+            <a href="{{ route('admin.inventory.index') }}" class="btn btn-link">{{ __('admin.common.cancel') }}</a>
         </form>
     </div>
 </div>

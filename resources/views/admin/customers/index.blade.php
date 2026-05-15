@@ -1,26 +1,26 @@
 @extends('layouts.admin')
 
-@section('title', 'Customers')
+@section('title', __('admin.customers.title'))
 
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h3 mb-0">Customers</h1>
-    <a href="{{ route('admin.customers.create') }}" class="btn btn-primary">New customer</a>
+    <h1 class="h3 mb-0">{{ __('admin.customers.title') }}</h1>
+    <a href="{{ route('admin.customers.create') }}" class="btn btn-primary">{{ __('admin.customers.new') }}</a>
 </div>
 
 <form method="get" class="row g-2 mb-3">
     <div class="col-auto">
-        <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name or phone">
+        <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="{{ __('admin.customers.search_placeholder') }}">
     </div>
     <div class="col-auto">
-        <button class="btn btn-outline-secondary" type="submit">Search</button>
+        <button class="btn btn-outline-secondary" type="submit">{{ __('admin.common.search') }}</button>
     </div>
 </form>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Name</th><th>Phone</th><th class="text-end">Total debt</th><th></th></tr></thead>
+            <thead><tr><th>{{ __('admin.common.name') }}</th><th>{{ __('admin.customers.phone') }}</th><th class="text-end">{{ __('admin.customers.total_debt') }}</th><th></th></tr></thead>
             <tbody>
             @foreach($customers as $c)
                 <tr>
@@ -28,10 +28,10 @@
                     <td>{{ $c->phone }}</td>
                     <td class="text-end">{{ number_format($c->total_debt, 2) }}</td>
                     <td class="text-end text-nowrap">
-                        <a href="{{ route('admin.customers.edit', $c) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                        <form action="{{ route('admin.customers.destroy', $c) }}" method="post" class="d-inline" onsubmit="return confirm('Delete customer?');">
+                        <a href="{{ route('admin.customers.edit', $c) }}" class="btn btn-sm btn-outline-primary">{{ __('admin.common.edit') }}</a>
+                        <form action="{{ route('admin.customers.destroy', $c) }}" method="post" class="d-inline" onsubmit="return confirm({{ json_encode(__('admin.customers.confirm_delete')) }});">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                            <button class="btn btn-sm btn-outline-danger" type="submit">{{ __('admin.common.delete') }}</button>
                         </form>
                     </td>
                 </tr>

@@ -1,22 +1,22 @@
 @extends('layouts.admin')
 
-@section('title', 'Inventory report')
+@section('title', __('admin.reports.inventory_title'))
 
 @section('content')
-<h1 class="h3 mb-3">Inventory report</h1>
+<h1 class="h3 mb-3">{{ __('admin.reports.inventory_title') }}</h1>
 <form method="get" class="mb-3">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" name="low_only" value="1" id="low_only" {{ request('low_only') ? 'checked' : '' }}>
-        <label class="form-check-label" for="low_only">Low stock only</label>
+        <label class="form-check-label" for="low_only">{{ __('admin.reports.low_only') }}</label>
     </div>
-    <button class="btn btn-outline-secondary btn-sm" type="submit">Filter</button>
-    <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.reports.inventory.csv') }}">Export CSV</a>
+    <button class="btn btn-outline-secondary btn-sm" type="submit">{{ __('admin.common.filter') }}</button>
+    <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.reports.inventory.csv') }}">{{ __('admin.common.export_csv') }}</a>
 </form>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
         <table class="table table-sm mb-0">
-            <thead><tr><th>SKU</th><th>Name</th><th>Category</th><th class="text-end">Stock</th><th class="text-end">Min</th><th>Status</th></tr></thead>
+            <thead><tr><th>{{ __('admin.reports.th_sku') }}</th><th>{{ __('admin.reports.th_name') }}</th><th>{{ __('admin.reports.th_category') }}</th><th class="text-end">{{ __('admin.reports.th_stock') }}</th><th class="text-end">{{ __('admin.reports.th_min') }}</th><th>{{ __('admin.reports.th_status') }}</th></tr></thead>
             <tbody>
             @foreach($products as $p)
                 <tr class="{{ $p->isLowStock() ? 'table-warning' : '' }}">
@@ -25,7 +25,7 @@
                     <td>{{ optional($p->category)->name }}</td>
                     <td class="text-end">{{ $p->stock_quantity }}</td>
                     <td class="text-end">{{ $p->minimum_stock_alert }}</td>
-                    <td>{{ $p->status }}</td>
+                    <td>{{ __('admin.products.status_'.$p->status) }}</td>
                 </tr>
             @endforeach
             </tbody>

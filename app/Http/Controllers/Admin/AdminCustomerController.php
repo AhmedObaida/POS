@@ -34,7 +34,7 @@ class AdminCustomerController extends Controller
     {
         Customer::query()->create($request->validated());
 
-        return redirect()->route('admin.customers.index')->with('success', 'Customer created.');
+        return redirect()->route('admin.customers.index')->with('success', __('messages.customer_created'));
     }
 
     public function show(Customer $customer)
@@ -62,16 +62,16 @@ class AdminCustomerController extends Controller
     {
         $customer->update($request->validated());
 
-        return redirect()->route('admin.customers.index')->with('success', 'Customer updated.');
+        return redirect()->route('admin.customers.index')->with('success', __('messages.customer_updated'));
     }
 
     public function destroy(Customer $customer)
     {
         if ($customer->invoices()->exists()) {
-            return redirect()->route('admin.customers.index')->with('error', 'Cannot delete a customer with invoices.');
+            return redirect()->route('admin.customers.index')->with('error', __('messages.customer_delete_blocked_flash'));
         }
         $customer->delete();
 
-        return redirect()->route('admin.customers.index')->with('success', 'Customer deleted.');
+        return redirect()->route('admin.customers.index')->with('success', __('messages.customer_deleted'));
     }
 }

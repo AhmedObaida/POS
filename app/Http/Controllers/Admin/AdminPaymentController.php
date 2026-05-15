@@ -66,7 +66,7 @@ class AdminPaymentController extends Controller
             return redirect()->back()->withInput()->withErrors(['amount' => $e->getMessage()]);
         }
 
-        return redirect()->route('admin.payments.index')->with('success', 'Payment recorded.');
+        return redirect()->route('admin.payments.index')->with('success', __('messages.payment_recorded'));
     }
 
     public function openInvoices(Request $request)

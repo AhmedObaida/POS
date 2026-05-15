@@ -5,7 +5,21 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">{{ __('Login') }}</div>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span>{{ __('Login') }}</span>
+                    <div class="d-flex gap-1">
+                        <form method="post" action="{{ route('locale.switch') }}" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="locale" value="en">
+                            <button type="submit" class="btn btn-sm {{ app()->getLocale() === 'en' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('admin.lang_en') }}</button>
+                        </form>
+                        <form method="post" action="{{ route('locale.switch') }}" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="locale" value="ar">
+                            <button type="submit" class="btn btn-sm {{ app()->getLocale() === 'ar' ? 'btn-primary' : 'btn-outline-secondary' }}">{{ __('admin.lang_ar') }}</button>
+                        </form>
+                    </div>
+                </div>
 
                 <div class="card-body">
                     <form method="POST" action="{{ route('login') }}">

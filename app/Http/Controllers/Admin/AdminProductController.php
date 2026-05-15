@@ -73,7 +73,7 @@ class AdminProductController extends Controller
         }
         Product::query()->create($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product created.');
+        return redirect()->route('admin.products.index')->with('success', __('messages.product_created'));
     }
 
     public function edit(Product $product)
@@ -95,19 +95,19 @@ class AdminProductController extends Controller
         }
         $product->update($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product updated.');
+        return redirect()->route('admin.products.index')->with('success', __('messages.product_updated'));
     }
 
     public function destroy(Product $product)
     {
         if ($product->invoiceItems()->exists()) {
-            return redirect()->route('admin.products.index')->with('error', 'Cannot delete a product that appears on invoices.');
+            return redirect()->route('admin.products.index')->with('error', __('messages.product_delete_blocked_flash'));
         }
         if ($product->image_path) {
             Storage::disk('public')->delete($product->image_path);
         }
         $product->delete();
 
-        return redirect()->route('admin.products.index')->with('success', 'Product deleted.');
+        return redirect()->route('admin.products.index')->with('success', __('messages.product_deleted'));
     }
 }
