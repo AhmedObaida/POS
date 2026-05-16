@@ -10,6 +10,25 @@ use Illuminate\Http\Request;
 
 class AdminCustomerController extends Controller
 {
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->get('q', ''));
+        if ($q === '') {
+            return response()->json([]);
+        }
+
+        $customers = Customer::query()
+            ->where(function ($query) use ($q) {
+                $query->where('name', 'like', '%'.$q.'%')
+                    ->orWhere('phone', 'like', '%'.$q.'%');
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get(['id', 'name', 'phone']);
+
+        return response()->json($customers);
+    }
+
     public function index(Request $request)
     {
         $q = Customer::query()->orderBy('name');

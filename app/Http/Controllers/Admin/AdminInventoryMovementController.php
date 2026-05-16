@@ -22,7 +22,7 @@ class AdminInventoryMovementController extends Controller
 
     public function index(Request $request)
     {
-        $query = InventoryMovement::query()->with('product')->latest();
+        $query = InventoryMovement::query()->with('product')->latest('id');
 
         if ($request->filled('product_id')) {
             $query->where('product_id', $request->get('product_id'));
@@ -37,11 +37,15 @@ class AdminInventoryMovementController extends Controller
         return view('admin.inventory.index', compact('movements', 'products'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $products = Product::query()->orderBy('name')->get();
+        $selectedProductId = old('product_id', $request->get('product_id'));
+        $selectedProduct = null;
+        if ($selectedProductId) {
+            $selectedProduct = Product::query()->find($selectedProductId, ['id', 'name', 'sku', 'stock_quantity']);
+        }
 
-        return view('admin.inventory.create', compact('products'));
+        return view('admin.inventory.create', compact('selectedProduct'));
     }
 
     public function store(StoreInventoryMovementRequest $request)

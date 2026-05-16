@@ -26,6 +26,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::resource('categories', AdminCategoryController::class)->except(['show']);
     Route::resource('products', AdminProductController::class)->except(['show']);
     Route::get('products-search', [AdminProductController::class, 'search'])->name('products.search');
+    Route::get('customers-search', [AdminCustomerController::class, 'search'])->name('customers.search');
 
     Route::resource('customers', AdminCustomerController::class);
 

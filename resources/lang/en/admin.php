@@ -65,6 +65,9 @@ return [
         'failed_load' => 'Failed to load',
         'select_customer_first' => '— Select customer first —',
         'select_invoice' => '— Select invoice —',
+        'search_customer' => 'Search customer by name or phone…',
+        'search_product' => 'Search product by name, SKU, or barcode…',
+        'no_results' => 'No results',
     ],
 
     'dashboard' => [

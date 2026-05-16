@@ -11,12 +11,20 @@
 <form method="get" class="row g-2 mb-3 align-items-end">
     <div class="col-md-3">
         <label class="form-label small mb-0">{{ __('admin.payments.filter_customer') }}</label>
-        <select name="customer_id" class="form-select">
-            <option value="">{{ __('admin.common.all') }}</option>
-            @foreach($customers as $c)
-                <option value="{{ $c->id }}" {{ (string) request('customer_id') === (string) $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-            @endforeach
-        </select>
+        @php
+            $filterCustomerLabel = $filterCustomer
+                ? $filterCustomer->name . ($filterCustomer->phone ? ' (' . $filterCustomer->phone . ')' : '')
+                : '';
+        @endphp
+        <x-entity-picker
+            type="customer"
+            name="customer_id"
+            :search-url="route('admin.customers.search')"
+            :placeholder="__('admin.common.search_customer')"
+            :empty-label="__('admin.common.no_results')"
+            :initial-id="request('customer_id')"
+            :initial-label="$filterCustomerLabel"
+        />
     </div>
     <div class="col-md-2">
         <label class="form-label small mb-0">{{ __('admin.common.from') }}</label>

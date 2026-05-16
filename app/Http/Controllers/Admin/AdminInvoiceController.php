@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreInvoiceRequest;
 use App\Models\Customer;
 use App\Models\Invoice;
-use App\Models\Product;
 use App\Services\InvoiceService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -24,7 +23,7 @@ class AdminInvoiceController extends Controller
 
     public function index(Request $request)
     {
-        $query = Invoice::query()->with(['customer', 'creator'])->latest();
+        $query = Invoice::query()->with(['customer', 'creator'])->latest('id');
 
         if ($request->filled('search')) {
             $s = $request->get('search');
@@ -38,19 +37,17 @@ class AdminInvoiceController extends Controller
         }
 
         $invoices = $query->paginate(20)->withQueryString();
-        $customers = Customer::query()->orderBy('name')->get();
+        $filterCustomer = $this->resolveCustomerForPicker($request->get('customer_id'));
 
-        return view('admin.invoices.index', compact('invoices', 'customers'));
+        return view('admin.invoices.index', compact('invoices', 'filterCustomer'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        $customers = Customer::query()->orderBy('name')->get();
-        $productOptions = Product::query()->active()->orderBy('name')->get([
-            'id', 'name', 'sku', 'stock_quantity', 'retail_price', 'wholesale_price',
-        ]);
+        $selectedCustomerId = old('customer_id', $request->get('customer_id'));
+        $selectedCustomer = $this->resolveCustomerForPicker($selectedCustomerId);
 
-        return view('admin.invoices.create', compact('customers', 'productOptions'));
+        return view('admin.invoices.create', compact('selectedCustomer'));
     }
 
     public function store(StoreInvoiceRequest $request)
@@ -84,5 +81,27 @@ class AdminInvoiceController extends Controller
         $pdf = Pdf::loadView('admin.invoices.print', compact('invoice'));
 
         return $pdf->download($invoice->invoice_number.'.pdf');
+    }
+
+    /**
+     * @param  int|string|null  $customerId
+     * @return object{id: int, name: string, phone: ?string}|null
+     */
+    protected function resolveCustomerForPicker($customerId)
+    {
+        if (! $customerId) {
+            return null;
+        }
+
+        $customer = Customer::query()->find($customerId);
+        if (! $customer) {
+            return null;
+        }
+
+        return (object) [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+        ];
     }
 }

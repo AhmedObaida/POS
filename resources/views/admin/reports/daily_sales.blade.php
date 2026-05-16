@@ -40,5 +40,8 @@
             </tbody>
         </table>
     </div>
+    @if($invoices->hasPages())
+        <div class="card-body border-top">{{ $invoices->links() }}</div>
+    @endif
 </div>
 @endsection

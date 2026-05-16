@@ -9,53 +9,66 @@ use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class AdminDashboardController extends Controller
 {
     public function index()
     {
         $today = Carbon::today();
+        $cacheKey = 'admin.dashboard.'.$today->toDateString();
 
-        $totalSalesToday = (float) Invoice::query()->whereDate('created_at', $today)->sum('total');
+        $stats = Cache::remember($cacheKey, 120, function () use ($today) {
+            $start = $today->copy()->startOfDay();
+            $end = $today->copy()->endOfDay();
 
-        $profitToday = (float) (InvoiceItem::query()
-            ->whereHas('invoice', function ($q) use ($today) {
-                $q->whereDate('created_at', $today);
-            })
-            ->selectRaw('COALESCE(SUM(line_total - (unit_cost * quantity)), 0) as p')
-            ->value('p'));
+            $totalSalesToday = (float) Invoice::query()
+                ->whereBetween('created_at', [$start, $end])
+                ->sum('total');
 
-        $pendingDebts = (float) Customer::query()->sum('total_debt');
-        $totalProducts = Product::query()->count();
-        $lowStockCount = Product::query()->whereColumn('stock_quantity', '<=', 'minimum_stock_alert')->count();
-        $lowStockProducts = Product::query()
-            ->with('category')
-            ->whereColumn('stock_quantity', '<=', 'minimum_stock_alert')
-            ->orderBy('stock_quantity')
-            ->limit(10)
-            ->get();
+            $profitToday = (float) InvoiceItem::query()
+                ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+                ->whereBetween('invoices.created_at', [$start, $end])
+                ->selectRaw('COALESCE(SUM(line_total - (unit_cost * quantity)), 0) as p')
+                ->value('p');
 
-        $latestInvoices = Invoice::query()
-            ->with('customer')
-            ->latest()
-            ->limit(8)
-            ->get();
+            $pendingDebts = (float) Customer::query()->sum('total_debt');
+            $totalProducts = Product::query()->count();
+            $lowStockCount = Product::query()
+                ->whereColumn('stock_quantity', '<=', 'minimum_stock_alert')
+                ->count();
 
-        $latestPayments = Payment::query()
-            ->with(['customer', 'invoice'])
-            ->latest()
-            ->limit(8)
-            ->get();
+            $lowStockProducts = Product::query()
+                ->with('category')
+                ->whereColumn('stock_quantity', '<=', 'minimum_stock_alert')
+                ->orderBy('stock_quantity')
+                ->limit(10)
+                ->get();
 
-        return view('admin.dashboard', compact(
-            'totalSalesToday',
-            'profitToday',
-            'pendingDebts',
-            'totalProducts',
-            'lowStockCount',
-            'lowStockProducts',
-            'latestInvoices',
-            'latestPayments'
-        ));
+            $latestInvoices = Invoice::query()
+                ->with('customer')
+                ->latest('id')
+                ->limit(8)
+                ->get();
+
+            $latestPayments = Payment::query()
+                ->with(['customer', 'invoice'])
+                ->latest('id')
+                ->limit(8)
+                ->get();
+
+            return compact(
+                'totalSalesToday',
+                'profitToday',
+                'pendingDebts',
+                'totalProducts',
+                'lowStockCount',
+                'lowStockProducts',
+                'latestInvoices',
+                'latestPayments'
+            );
+        });
+
+        return view('admin.dashboard', $stats);
     }
 }

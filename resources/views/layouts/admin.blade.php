@@ -88,6 +88,7 @@
     </main>
 </div>
 <script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/admin/entity-picker.js') }}"></script>
 <script>
 (function () {
     var root = document.getElementById('adminHtmlRoot');

@@ -10,13 +10,23 @@
             @csrf
             <div class="mb-3">
                 <label class="form-label">{{ __('admin.payments.customer') }}</label>
-                <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
-                    <option value="">{{ __('admin.common.select') }}</option>
-                    @foreach($customers as $c)
-                        <option value="{{ $c->id }}" {{ (string) old('customer_id', $selectedCustomerId) === (string) $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                    @endforeach
-                </select>
-                @error('customer_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @php
+                    $customerLabel = $selectedCustomer
+                        ? $selectedCustomer->name . ($selectedCustomer->phone ? ' (' . $selectedCustomer->phone . ')' : '')
+                        : '';
+                @endphp
+                <x-entity-picker
+                    type="customer"
+                    name="customer_id"
+                    :search-url="route('admin.customers.search')"
+                    :placeholder="__('admin.common.search_customer')"
+                    :empty-label="__('admin.common.no_results')"
+                    :initial-id="old('customer_id', $selectedCustomerId)"
+                    :initial-label="$customerLabel"
+                    :required="true"
+                    input-class="form-control @error('customer_id') is-invalid @enderror"
+                />
+                @error('customer_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
                 <label class="form-label">{{ __('admin.payments.invoice') }}</label>
@@ -65,9 +75,10 @@
 @push('scripts')
 <script>
 (function () {
-    var customer = document.getElementById('customer_id');
+    var customerHidden = document.querySelector('.entity-picker[data-hidden-name="customer_id"] input[type="hidden"]');
     var invoice = document.getElementById('invoice_id');
     var url = "{{ route('admin.payments.open-invoices') }}";
+    var selectedInvoiceId = @json(old('invoice_id', $selectedInvoiceId));
     var i18n = {
         selectCustomerFirst: @json(__('admin.common.select_customer_first')),
         loading: @json(__('admin.common.loading')),
@@ -77,7 +88,7 @@
     };
 
     function loadInvoices() {
-        var cid = customer.value;
+        var cid = customerHidden ? customerHidden.value : '';
         if (!cid) {
             invoice.innerHTML = '<option value="">' + i18n.selectCustomerFirst + '</option>';
             return;
@@ -91,6 +102,9 @@
                 var opt = document.createElement('option');
                 opt.value = inv.id;
                 opt.textContent = inv.invoice_number + ' — ' + i18n.remaining + ' ' + parseFloat(inv.remaining_amount).toFixed(2);
+                if (String(inv.id) === String(selectedInvoiceId)) {
+                    opt.selected = true;
+                }
                 invoice.appendChild(opt);
             });
         }).catch(function () {
@@ -98,11 +112,13 @@
         });
     }
 
-    customer.addEventListener('change', loadInvoices);
-    if (customer.value) {
-        var hadServerList = {{ $invoices->count() > 0 ? 'true' : 'false' }};
-        if (!hadServerList) {
-            loadInvoices();
+    if (customerHidden) {
+        customerHidden.addEventListener('change', loadInvoices);
+        if (customerHidden.value) {
+            var hadServerList = {{ $invoices->count() > 0 ? 'true' : 'false' }};
+            if (!hadServerList) {
+                loadInvoices();
+            }
         }
     }
 })();

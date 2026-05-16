@@ -23,29 +23,29 @@ class AdminPaymentController extends Controller
 
     public function index(Request $request)
     {
-        $query = Payment::query()->with(['customer', 'invoice', 'creator'])->latest();
+        $query = Payment::query()->with(['customer', 'invoice', 'creator'])->latest('id');
 
         if ($request->filled('customer_id')) {
             $query->where('customer_id', $request->get('customer_id'));
         }
         if ($request->filled('from')) {
-            $query->whereDate('payment_date', '>=', $request->get('from'));
+            $query->where('payment_date', '>=', $request->get('from'));
         }
         if ($request->filled('to')) {
-            $query->whereDate('payment_date', '<=', $request->get('to'));
+            $query->where('payment_date', '<=', $request->get('to'));
         }
 
         $payments = $query->paginate(20)->withQueryString();
-        $customers = Customer::query()->orderBy('name')->get();
+        $filterCustomer = $this->resolveCustomerForPicker($request->get('customer_id'));
 
-        return view('admin.payments.index', compact('payments', 'customers'));
+        return view('admin.payments.index', compact('payments', 'filterCustomer'));
     }
 
     public function create(Request $request)
     {
-        $customers = Customer::query()->orderBy('name')->get();
-        $selectedCustomerId = $request->get('customer_id');
-        $selectedInvoiceId = $request->get('invoice_id');
+        $selectedCustomerId = old('customer_id', $request->get('customer_id'));
+        $selectedInvoiceId = old('invoice_id', $request->get('invoice_id'));
+        $selectedCustomer = $this->resolveCustomerForPicker($selectedCustomerId);
         $invoices = collect();
         if ($selectedCustomerId) {
             $invoices = Invoice::query()
@@ -55,7 +55,7 @@ class AdminPaymentController extends Controller
                 ->get();
         }
 
-        return view('admin.payments.create', compact('customers', 'invoices', 'selectedCustomerId', 'selectedInvoiceId'));
+        return view('admin.payments.create', compact('invoices', 'selectedCustomer', 'selectedCustomerId', 'selectedInvoiceId'));
     }
 
     public function store(StorePaymentRequest $request)
@@ -81,5 +81,27 @@ class AdminPaymentController extends Controller
             ->get(['id', 'invoice_number', 'total', 'paid_amount', 'remaining_amount', 'created_at']);
 
         return response()->json($invoices);
+    }
+
+    /**
+     * @param  int|string|null  $customerId
+     * @return object{id: int, name: string, phone: ?string}|null
+     */
+    protected function resolveCustomerForPicker($customerId)
+    {
+        if (! $customerId) {
+            return null;
+        }
+
+        $customer = Customer::query()->find($customerId);
+        if (! $customer) {
+            return null;
+        }
+
+        return (object) [
+            'id' => $customer->id,
+            'name' => $customer->name,
+            'phone' => $customer->phone,
+        ];
     }
 }

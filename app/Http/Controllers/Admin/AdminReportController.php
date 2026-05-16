@@ -7,28 +7,32 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Product;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Barryvdh\DomPDF\Facade\Pdf;
 
 class AdminReportController extends Controller
 {
     public function dailySales(Request $request)
     {
         $date = $request->get('date', Carbon::today()->toDateString());
-        $invoices = Invoice::query()
-            ->with('customer')
-            ->whereDate('created_at', $date)
-            ->orderByDesc('id')
-            ->get();
+        [$start, $end] = $this->dayBounds($date);
+
+        $baseQuery = Invoice::query()->whereBetween('created_at', [$start, $end]);
 
         $totals = [
-            'count' => $invoices->count(),
-            'sales' => (float) $invoices->sum('total'),
-            'paid' => (float) $invoices->sum('paid_amount'),
-            'remaining' => (float) $invoices->sum('remaining_amount'),
+            'count' => (int) (clone $baseQuery)->count(),
+            'sales' => (float) (clone $baseQuery)->sum('total'),
+            'paid' => (float) (clone $baseQuery)->sum('paid_amount'),
+            'remaining' => (float) (clone $baseQuery)->sum('remaining_amount'),
         ];
+
+        $invoices = (clone $baseQuery)
+            ->with('customer')
+            ->orderByDesc('id')
+            ->paginate(25)
+            ->withQueryString();
 
         return view('admin.reports.daily_sales', compact('date', 'invoices', 'totals'));
     }
@@ -36,29 +40,32 @@ class AdminReportController extends Controller
     public function dailySalesCsv(Request $request)
     {
         $date = $request->get('date', Carbon::today()->toDateString());
-        $rows = Invoice::query()
-            ->with('customer')
-            ->whereDate('created_at', $date)
-            ->orderByDesc('id')
-            ->get();
-
+        [$start, $end] = $this->dayBounds($date);
         $filename = 'daily-sales-'.$date.'.csv';
 
-        return response()->streamDownload(function () use ($rows) {
+        return response()->streamDownload(function () use ($start, $end) {
             $out = fopen('php://output', 'w');
             fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($out, ['Invoice', 'Customer', 'Total', 'Paid', 'Remaining', 'Status', 'Date']);
-            foreach ($rows as $inv) {
-                fputcsv($out, [
-                    $inv->invoice_number,
-                    optional($inv->customer)->name,
-                    $inv->total,
-                    $inv->paid_amount,
-                    $inv->remaining_amount,
-                    $inv->payment_status,
-                    $inv->created_at,
-                ]);
-            }
+
+            Invoice::query()
+                ->with('customer')
+                ->whereBetween('created_at', [$start, $end])
+                ->orderByDesc('id')
+                ->chunk(500, function ($rows) use ($out) {
+                    foreach ($rows as $inv) {
+                        fputcsv($out, [
+                            $inv->invoice_number,
+                            optional($inv->customer)->name,
+                            $inv->total,
+                            $inv->paid_amount,
+                            $inv->remaining_amount,
+                            $inv->payment_status,
+                            $inv->created_at,
+                        ]);
+                    }
+                });
+
             fclose($out);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
@@ -91,18 +98,10 @@ class AdminReportController extends Controller
     {
         $from = $request->get('from', Carbon::today()->startOfMonth()->toDateString());
         $to = $request->get('to', Carbon::today()->toDateString());
+        [$start, $end] = $this->dateBounds($from, $to);
 
-        $profit = (float) InvoiceItem::query()
-            ->whereHas('invoice', function ($q) use ($from, $to) {
-                $q->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
-            })
-            ->selectRaw('COALESCE(SUM(line_total - (unit_cost * quantity)), 0) as p')
-            ->value('p');
-
-        $revenue = (float) Invoice::query()
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
-            ->sum('total');
+        $profit = $this->profitBetween($start, $end);
+        $revenue = $this->revenueBetween($start, $end);
 
         return view('admin.reports.profit', compact('from', 'to', 'profit', 'revenue'));
     }
@@ -120,26 +119,29 @@ class AdminReportController extends Controller
 
     public function inventoryCsv(Request $request)
     {
-        $products = Product::query()->with('category')->orderBy('name')->get();
         $filename = 'inventory-'.date('Y-m-d').'.csv';
 
-        return response()->streamDownload(function () use ($products) {
+        return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
             fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($out, ['SKU', 'Name', 'Category', 'Stock', 'Min alert', 'Retail', 'Wholesale', 'Purchase', 'Status']);
-            foreach ($products as $p) {
-                fputcsv($out, [
-                    $p->sku,
-                    $p->name,
-                    optional($p->category)->name,
-                    $p->stock_quantity,
-                    $p->minimum_stock_alert,
-                    $p->retail_price,
-                    $p->wholesale_price,
-                    $p->purchase_price,
-                    $p->status,
-                ]);
-            }
+
+            Product::query()->with('category')->orderBy('name')->chunk(500, function ($products) use ($out) {
+                foreach ($products as $p) {
+                    fputcsv($out, [
+                        $p->sku,
+                        $p->name,
+                        optional($p->category)->name,
+                        $p->stock_quantity,
+                        $p->minimum_stock_alert,
+                        $p->retail_price,
+                        $p->wholesale_price,
+                        $p->purchase_price,
+                        $p->status,
+                    ]);
+                }
+            });
+
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -156,16 +158,19 @@ class AdminReportController extends Controller
 
     public function debtsCsv()
     {
-        $customers = Customer::query()->orderByDesc('total_debt')->get();
         $filename = 'customer-debts-'.date('Y-m-d').'.csv';
 
-        return response()->streamDownload(function () use ($customers) {
+        return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
             fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($out, ['Customer', 'Phone', 'Total debt']);
-            foreach ($customers as $c) {
-                fputcsv($out, [$c->name, $c->phone, $c->total_debt]);
-            }
+
+            Customer::query()->orderByDesc('total_debt')->chunk(500, function ($customers) use ($out) {
+                foreach ($customers as $c) {
+                    fputcsv($out, [$c->name, $c->phone, $c->total_debt]);
+                }
+            });
+
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -175,19 +180,10 @@ class AdminReportController extends Controller
         $from = $request->get('from', Carbon::today()->subDays(30)->toDateString());
         $to = $request->get('to', Carbon::today()->toDateString());
         $limit = min(50, max(5, (int) $request->get('limit', 10)));
+        [$start, $end] = $this->dateBounds($from, $to);
 
-        $rows = InvoiceItem::query()
-            ->select('product_id', DB::raw('SUM(quantity) as qty_sum'), DB::raw('SUM(line_total) as revenue_sum'))
-            ->whereHas('invoice', function ($q) use ($from, $to) {
-                $q->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
-            })
-            ->groupBy('product_id')
-            ->orderByDesc('qty_sum')
-            ->limit($limit)
-            ->get();
-
-        $productIds = $rows->pluck('product_id')->all();
-        $products = Product::query()->whereIn('id', $productIds)->get()->keyBy('id');
+        $rows = $this->topProductRows($start, $end, $limit);
+        $products = Product::query()->whereIn('id', $rows->pluck('product_id'))->get()->keyBy('id');
 
         return view('admin.reports.top_products', compact('from', 'to', 'limit', 'rows', 'products'));
     }
@@ -197,17 +193,9 @@ class AdminReportController extends Controller
         $from = $request->get('from', Carbon::today()->subDays(30)->toDateString());
         $to = $request->get('to', Carbon::today()->toDateString());
         $limit = min(50, max(5, (int) $request->get('limit', 10)));
+        [$start, $end] = $this->dateBounds($from, $to);
 
-        $rows = InvoiceItem::query()
-            ->select('product_id', DB::raw('SUM(quantity) as qty_sum'), DB::raw('SUM(line_total) as revenue_sum'))
-            ->whereHas('invoice', function ($q) use ($from, $to) {
-                $q->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
-            })
-            ->groupBy('product_id')
-            ->orderByDesc('qty_sum')
-            ->limit($limit)
-            ->get();
-
+        $rows = $this->topProductRows($start, $end, $limit);
         $products = Product::query()->whereIn('id', $rows->pluck('product_id'))->get()->keyBy('id');
         $filename = 'top-products-'.$from.'-to-'.$to.'.csv';
 
@@ -232,21 +220,65 @@ class AdminReportController extends Controller
     {
         $from = $request->get('from', Carbon::today()->startOfMonth()->toDateString());
         $to = $request->get('to', Carbon::today()->toDateString());
+        [$start, $end] = $this->dateBounds($from, $to);
 
-        $profit = (float) InvoiceItem::query()
-            ->whereHas('invoice', function ($q) use ($from, $to) {
-                $q->whereDate('created_at', '>=', $from)->whereDate('created_at', '<=', $to);
-            })
-            ->selectRaw('COALESCE(SUM(line_total - (unit_cost * quantity)), 0) as p')
-            ->value('p');
-
-        $revenue = (float) Invoice::query()
-            ->whereDate('created_at', '>=', $from)
-            ->whereDate('created_at', '<=', $to)
-            ->sum('total');
+        $profit = $this->profitBetween($start, $end);
+        $revenue = $this->revenueBetween($start, $end);
 
         $pdf = Pdf::loadView('admin.reports.profit_pdf', compact('from', 'to', 'profit', 'revenue'));
 
         return $pdf->download('profit-'.$from.'-'.$to.'.pdf');
+    }
+
+    /**
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    protected function dayBounds(string $date): array
+    {
+        $day = Carbon::parse($date);
+
+        return [$day->copy()->startOfDay(), $day->copy()->endOfDay()];
+    }
+
+    /**
+     * @return array{0: \Carbon\Carbon, 1: \Carbon\Carbon}
+     */
+    protected function dateBounds(string $from, string $to): array
+    {
+        return [
+            Carbon::parse($from)->startOfDay(),
+            Carbon::parse($to)->endOfDay(),
+        ];
+    }
+
+    protected function profitBetween(Carbon $start, Carbon $end): float
+    {
+        return (float) InvoiceItem::query()
+            ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+            ->whereBetween('invoices.created_at', [$start, $end])
+            ->selectRaw('COALESCE(SUM(line_total - (unit_cost * quantity)), 0) as p')
+            ->value('p');
+    }
+
+    protected function revenueBetween(Carbon $start, Carbon $end): float
+    {
+        return (float) Invoice::query()
+            ->whereBetween('created_at', [$start, $end])
+            ->sum('total');
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    protected function topProductRows(Carbon $start, Carbon $end, int $limit)
+    {
+        return InvoiceItem::query()
+            ->select('invoice_items.product_id', DB::raw('SUM(invoice_items.quantity) as qty_sum'), DB::raw('SUM(invoice_items.line_total) as revenue_sum'))
+            ->join('invoices', 'invoices.id', '=', 'invoice_items.invoice_id')
+            ->whereBetween('invoices.created_at', [$start, $end])
+            ->groupBy('invoice_items.product_id')
+            ->orderByDesc('qty_sum')
+            ->limit($limit)
+            ->get();
     }
 }

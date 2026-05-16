@@ -65,6 +65,9 @@ return [
         'failed_load' => 'فشل التحميل',
         'select_customer_first' => '— اختر العميل أولاً —',
         'select_invoice' => '— اختر الفاتورة —',
+        'search_customer' => 'ابحث عن عميل بالاسم أو الهاتف…',
+        'search_product' => 'ابحث عن منتج بالاسم أو SKU أو الباركود…',
+        'no_results' => 'لا توجد نتائج',
     ],
 
     'dashboard' => [

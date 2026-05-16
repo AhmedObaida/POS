@@ -18,13 +18,24 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">{{ __('admin.inventory.product') }}</label>
-                <select name="product_id" class="form-select @error('product_id') is-invalid @enderror" required>
-                    <option value="">{{ __('admin.common.select') }}</option>
-                    @foreach($products as $p)
-                        <option value="{{ $p->id }}" {{ (string) old('product_id') === (string) $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ $p->sku }}) — {{ __('admin.invoices.stock_label') }} {{ $p->stock_quantity }}</option>
-                    @endforeach
-                </select>
-                @error('product_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                @php
+                    $productLabel = $selectedProduct
+                        ? $selectedProduct->name . ' (' . $selectedProduct->sku . ') — ' . __('admin.invoices.stock_label') . ' ' . $selectedProduct->stock_quantity
+                        : '';
+                @endphp
+                <x-entity-picker
+                    type="product"
+                    name="product_id"
+                    :search-url="route('admin.products.search')"
+                    :placeholder="__('admin.common.search_product')"
+                    :empty-label="__('admin.common.no_results')"
+                    :stock-label="__('admin.invoices.stock_label')"
+                    :initial-id="old('product_id', optional($selectedProduct)->id)"
+                    :initial-label="$productLabel"
+                    :required="true"
+                    input-class="form-control @error('product_id') is-invalid @enderror"
+                />
+                @error('product_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             </div>
             <div class="mb-3">
                 <label class="form-label">{{ __('admin.inventory.quantity') }}</label>

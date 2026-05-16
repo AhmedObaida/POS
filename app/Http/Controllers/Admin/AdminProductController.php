@@ -42,7 +42,11 @@ class AdminProductController extends Controller
 
     public function search(Request $request)
     {
-        $q = $request->get('q', '');
+        $q = trim((string) $request->get('q', ''));
+        if ($q === '') {
+            return response()->json([]);
+        }
+
         $products = Product::query()
             ->active()
             ->where(function ($query) use ($q) {

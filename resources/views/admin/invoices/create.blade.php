@@ -10,12 +10,22 @@
     <div class="row g-3 mb-3">
         <div class="col-md-4">
             <label class="form-label">{{ __('admin.invoices.customer') }}</label>
-            <select name="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
-                <option value="">{{ __('admin.common.select') }}</option>
-                @foreach($customers as $c)
-                    <option value="{{ $c->id }}" {{ (string) old('customer_id', request('customer_id')) === (string) $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
-                @endforeach
-            </select>
+            @php
+                $customerLabel = $selectedCustomer
+                    ? $selectedCustomer->name . ($selectedCustomer->phone ? ' (' . $selectedCustomer->phone . ')' : '')
+                    : '';
+            @endphp
+            <x-entity-picker
+                type="customer"
+                name="customer_id"
+                :search-url="route('admin.customers.search')"
+                :placeholder="__('admin.common.search_customer')"
+                :empty-label="__('admin.common.no_results')"
+                :initial-id="old('customer_id', optional($selectedCustomer)->id)"
+                :initial-label="$customerLabel"
+                :required="true"
+                input-class="form-control @error('customer_id') is-invalid @enderror"
+            />
             @error('customer_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
         </div>
         <div class="col-md-4">
@@ -59,16 +69,18 @@
             <table class="table mb-0">
                 <thead><tr><th>{{ __('admin.invoices.product') }}</th><th style="width:120px">{{ __('admin.invoices.qty') }}</th><th></th></tr></thead>
                 <tbody id="linesBody">
-                    <tr class="line-row" data-line="0">
+                    <tr class="line-row">
                         <td>
-                            <select name="items[0][product_id]" class="form-select form-select-sm product-select @error('items.0.product_id') is-invalid @enderror" required>
-                                <option value="">{{ __('admin.invoices.product_placeholder') }}</option>
-                                @foreach($productOptions as $p)
-                                    <option value="{{ $p->id }}" data-stock="{{ $p->stock_quantity }}">
-                                        {{ $p->name }} ({{ $p->sku }}) — {{ __('admin.invoices.stock_label') }} {{ $p->stock_quantity }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <x-entity-picker
+                                type="product"
+                                name="items[0][product_id]"
+                                :search-url="route('admin.products.search')"
+                                :placeholder="__('admin.common.search_product')"
+                                :empty-label="__('admin.common.no_results')"
+                                :stock-label="__('admin.invoices.stock_label')"
+                                input-class="form-control form-control-sm"
+                                :required="true"
+                            />
                             @error('items.0.product_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </td>
                         <td>
@@ -82,26 +94,15 @@
         </div>
     </div>
 
-    <p class="small text-muted">{!! __('admin.invoices.pos_json_hint') !!} <a href="{{ route('admin.products.search') }}?q=" target="_blank">{{ route('admin.products.search') }}</a></p>
-
     <button type="submit" class="btn btn-primary">{{ __('admin.invoices.create') }}</button>
     <a href="{{ route('admin.invoices.index') }}" class="btn btn-link">{{ __('admin.common.cancel') }}</a>
 </form>
 
 <template id="lineTemplate">
     <tr class="line-row">
+        <td class="product-picker-cell"></td>
         <td>
-            <select class="form-select form-select-sm product-select" data-name-product required>
-                <option value="">{{ __('admin.invoices.product_placeholder') }}</option>
-                @foreach($productOptions as $p)
-                    <option value="{{ $p->id }}" data-stock="{{ $p->stock_quantity }}">
-                        {{ $p->name }} ({{ $p->sku }}) — {{ __('admin.invoices.stock_label') }} {{ $p->stock_quantity }}
-                    </option>
-                @endforeach
-            </select>
-        </td>
-        <td>
-            <input type="number" class="form-control form-control-sm qty-input" data-name-qty value="1" min="1" required>
+            <input type="number" class="form-control form-control-sm qty-input" value="1" min="1" required>
         </td>
         <td>
             <button type="button" class="btn btn-sm btn-outline-danger btn-remove">{{ __('admin.invoices.remove') }}</button>
@@ -115,13 +116,32 @@
     var lineIndex = 1;
     var tbody = document.getElementById('linesBody');
     var tpl = document.getElementById('lineTemplate');
+    var productSearchUrl = @json(route('admin.products.search'));
+    var productPlaceholder = @json(__('admin.common.search_product'));
+    var productEmpty = @json(__('admin.common.no_results'));
+    var stockLabel = @json(__('admin.invoices.stock_label'));
+
+    function buildProductPickerHtml(name) {
+        return '<div class="entity-picker position-relative" data-type="product" data-search-url="' + productSearchUrl + '" data-hidden-name="' + name + '" data-placeholder="' + productPlaceholder + '" data-empty-label="' + productEmpty + '" data-stock-label="' + stockLabel + '" data-min-length="1">' +
+            '<input type="hidden" name="' + name + '" required>' +
+            '<input type="text" class="entity-picker-input form-control form-control-sm" placeholder="' + productPlaceholder + '" autocomplete="off">' +
+            '<small class="entity-picker-hint text-muted d-none d-block mt-1"></small>' +
+            '<div class="entity-picker-results list-group position-absolute w-100 shadow-sm d-none" style="z-index:1050;max-height:220px;overflow-y:auto;"></div>' +
+            '</div>';
+    }
+
     document.getElementById('addLine').addEventListener('click', function () {
         var node = document.importNode(tpl.content, true);
         var idx = lineIndex++;
-        node.querySelector('.product-select').setAttribute('name', 'items[' + idx + '][product_id]');
+        var pickerCell = node.querySelector('.product-picker-cell');
+        pickerCell.innerHTML = buildProductPickerHtml('items[' + idx + '][product_id]');
         node.querySelector('.qty-input').setAttribute('name', 'items[' + idx + '][quantity]');
         tbody.appendChild(node);
+        if (window.initEntityPicker) {
+            window.initEntityPicker(pickerCell.querySelector('.entity-picker'));
+        }
     });
+
     tbody.addEventListener('click', function (e) {
         if (e.target && e.target.classList.contains('btn-remove')) {
             var row = e.target.closest('tr');

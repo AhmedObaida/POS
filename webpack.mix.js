@@ -13,6 +13,7 @@ const webpack = require('webpack');
  */
 
 mix.js('resources/js/app.js', 'public/js')
+    .js('resources/js/admin/entity-picker.js', 'public/js/admin/entity-picker.js')
     .sass('resources/sass/app.scss', 'public/css')
     .sourceMaps();
 
