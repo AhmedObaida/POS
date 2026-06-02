@@ -10,7 +10,7 @@ return [
 
     'nav' => [
         'dashboard' => 'لوحة التحكم',
-        'categories' => 'التصنيفات',
+        'categories' => 'الأقسام',
         'products' => 'المنتجات',
         'customers' => 'العملاء',
         'invoices' => 'الفواتير',
@@ -88,11 +88,11 @@ return [
     ],
 
     'categories' => [
-        'title' => 'التصنيفات',
+        'title' => 'الأقسام',
         'new' => 'تصنيف جديد',
-        'edit' => 'تعديل التصنيف',
+        'edit' => 'تعديل القسم',
         'search_name' => 'بحث بالاسم',
-        'confirm_delete' => 'حذف هذا التصنيف؟',
+        'confirm_delete' => 'حذف هذا القسم؟',
     ],
 
     'products' => [
@@ -100,7 +100,7 @@ return [
         'new' => 'منتج جديد',
         'edit' => 'تعديل المنتج',
         'search_placeholder' => 'الاسم، SKU، الباركود',
-        'category' => 'التصنيف',
+        'category' => 'القسم',
         'low_stock_only' => 'منخفض المخزون فقط',
         'sku' => 'رمز SKU',
         'retail' => 'قطاعي',
@@ -256,7 +256,7 @@ return [
         'low_only' => 'منخفض المخزون فقط',
         'th_sku' => 'SKU',
         'th_product' => 'المنتج',
-        'th_category' => 'التصنيف',
+        'th_category' => 'القسم',
         'th_name' => 'الاسم',
         'th_stock' => 'المخزون',
         'th_status' => 'الحالة',

@@ -1,9 +1,9 @@
 <?php
 
 return [
-    'category_created' => 'تم إنشاء التصنيف.',
-    'category_updated' => 'تم تحديث التصنيف.',
-    'category_deleted' => 'تم حذف التصنيف.',
+    'category_created' => 'تم إنشاء القسم.',
+    'category_updated' => 'تم تحديث القسم.',
+    'category_deleted' => 'تم حذف القسم.',
     'product_created' => 'تم إنشاء المنتج.',
     'product_updated' => 'تم تحديث المنتج.',
     'product_deleted' => 'تم حذف المنتج.',
